@@ -1,0 +1,7 @@
+cookie:
+  expiry_days: 2
+  key: random_signature_key # Must be string
+  name: random_cookie_name
+preauthorized:
+  emails:
+  - gowthamiradha09@gmail.com
