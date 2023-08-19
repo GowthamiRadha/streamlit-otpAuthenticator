@@ -5,6 +5,9 @@ import yaml
 import pandas as pd
 from yaml.loader import SafeLoader
 import re,time
+import pandas as pd
+import pyotp
+from fuzzywuzzy import process
 
 
 st.title("OTP Authenticator")
@@ -166,16 +169,52 @@ def main():
                 st.table(df)
             elif choice == "GetOTP":
                 st.subheader("Get OTP for LogIn")
-                with st.form("GetOTPForm",clear_on_submit=True):
-                    email = st.text_input("Enter Email")
-                    submitted = st.form_submit_button("GetOTP")
-                    if submitted:
-                        otp = db.get_otp(email)
-                        if otp is None:
-                            st.error('Invalid Email')
-                        else:
-                            st.success(f"Successfully Generated OTP for {email}")
-                            st.code(otp)
+                students = db.fetch_all_students()
+                df = pd.DataFrame(students)
+                search_input = st.text_input("Search by Name or Email:")
+
+                # Use fuzzy matching to find the best matches for Name and Email
+                names = df['name'].tolist()
+                emails = df['key'].tolist()
+                best_name_matches = process.extract(search_input, names, limit=df.shape[0])
+                best_email_matches = process.extract(search_input, emails, limit=df.shape[0])
+
+                # Extract the matched names and emails
+                matched_names = [match for match, score in best_name_matches if score > 75]
+                matched_emails = [match for match, score in best_email_matches if score > 75]
+
+                # Filter dataframe by the matched names and emails
+                filtered_df = df[df['name'].isin(matched_names) | df['key'].isin(matched_emails)]
+
+                # If there are any matches, allow the user to select a record by name
+                if not filtered_df.empty:
+                    # Use radio buttons for user selection
+                    selected_name = st.radio("Select a user:", filtered_df['name'].tolist())
+                    selected_user = filtered_df[filtered_df['name'] == selected_name].iloc[0]
+
+                    # Use Streamlit's native button for the 'Get OTP' action
+                    if st.button("Get OTP"):
+                        # Generate OTP using pyotp and the selected user's associated secret
+                        totp = pyotp.TOTP(selected_user['secretKey'])
+                        otp = totp.now()
+                        
+                        # Display the OTP in larger font and bold, and add a copy-to-clipboard button
+                        otp_display = f"Generated OTP for {selected_user['name']}: <span style='font-size: 1.5em; font-weight: bold;'>{otp}</span>"
+                        st.markdown(otp_display, unsafe_allow_html=True)
+                        
+                        # Add clipboard.js functionality to copy the OTP
+                        st.markdown(
+                            """
+                            <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.8/clipboard.min.js"></script>
+                            <script>
+                            var clipboard = new ClipboardJS('.clipboard');
+                            </script>
+                            """,
+                            unsafe_allow_html=True
+                        )
+                else:
+                    st.warning("No matches found!")
+
             elif choice == "RegisterSecretKey":
                 st.subheader("Register New LogIn Key")
                 with st.form("registerKeyForm", clear_on_submit=True):
