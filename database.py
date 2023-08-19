@@ -35,7 +35,8 @@ def get_user_role(username):
 def delete_user(username):
     if fetch_user_by_email(username) is None:
         return "User with given email does not exist"
-    return user_db.delete(username)
+    user_db.delete(username)
+    return "User deleted successfully"
 
 def update_user(username, name, password, role):
     """ Updates the user with the given username with the given updates."""
@@ -99,7 +100,8 @@ def fetch_all_students():
 def delete_student(username):
     if fetch_student_by_email(username) is None:
         return "Student with given email does not exist"
-    return student_db.delete(username)
+    student_db.delete(username)
+    return "Student deleted successfully"
 
 
 def update_student(username, name, secretKey):
