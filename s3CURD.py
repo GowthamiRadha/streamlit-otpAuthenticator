@@ -28,13 +28,20 @@ def write_csv_to_s3(df, bucket, file_name):
     s3.put_object(Body=csv_buffer.getvalue(), Bucket=bucket, Key=file_name)
 
 # User functions
+# User functions
 def insert_user(username, name, password, role):
     df = read_csv_from_s3(BUCKET_NAME, USER_FILE_NAME)
+    
     if df[df['key'] == username].shape[0] > 0:
         return "User Already Exists!!"
+        
     passwords = stauth.Hasher([password]).generate()
     new_row = {'key': username, 'name': name, 'password': passwords[0], 'role': role}
-    df = df.append(new_row, ignore_index=True)
+    
+    # Create a new DataFrame for the single row and concatenate it with the original DataFrame
+    new_df = pd.DataFrame([new_row])
+    df = pd.concat([df, new_df], ignore_index=True)
+    
     write_csv_to_s3(df, BUCKET_NAME, USER_FILE_NAME)
     return "Successfully Added User " + username
 
@@ -89,10 +96,19 @@ def get_otp(email):
 
 def insert_secretKey(email, studentName, secretKey):
     df = read_csv_from_s3(BUCKET_NAME, STUDENT_FILE_NAME)
+    # Check if the DataFrame is None or not
+    if df is None:
+        return "Error: DataFrame is None"
     if not df[df['key'] == email].empty:
         return "SecretKey already registered for " + email
     new_row = {'key': email, 'name': studentName, 'secretKey': secretKey}
-    df = df.append(new_row, ignore_index=True)
+    print(type(df))
+    print(dir(df))
+
+    # Create a new DataFrame for the single row and concatenate it with the original DataFrame
+    new_df = pd.DataFrame([new_row])
+    df = pd.concat([df, new_df], ignore_index=True)
+
     write_csv_to_s3(df, BUCKET_NAME, STUDENT_FILE_NAME)
     return "Successfully registered for user " + email
 
@@ -117,3 +133,22 @@ def update_student(username, name, secretKey):
         if secretKey:
             df.loc[index, 'secretKey'] = secretKey
         write_csv_to_s3(df, BUCKET_NAME, STUDENT_FILE_NAME)
+
+
+# def test_add_student():
+#     # Read existing students data
+#     df = read_csv_from_s3(BUCKET_NAME, STUDENT_FILE_NAME)
+    
+#     print("Existing students:")
+#     print(df)
+    
+#     # Take inputs
+#     username = input("Enter the email of the student to update: ")
+#     new_name = input("Enter new name (leave empty to keep the same): ")
+#     new_secret_key = input("Enter new secret key (leave empty to keep the same): ")
+
+#     print(insert_secretKey(username,new_name,new_secret_key))
+    
+#     print("Student updated successfully")
+
+# test_add_student()
