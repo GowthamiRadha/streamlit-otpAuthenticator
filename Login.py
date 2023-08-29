@@ -1,6 +1,6 @@
 import streamlit as st
 import streamlit_authenticator as stauth
-import database as db
+import s3CURD as db
 import yaml
 import pandas as pd
 from yaml.loader import SafeLoader
