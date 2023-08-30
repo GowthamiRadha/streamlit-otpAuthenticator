@@ -1,14 +1,12 @@
 import streamlit as st
 import streamlit_authenticator as stauth
-import s3CURD as db
+import sqlDatabase as db
 import yaml
 import pandas as pd
 from yaml.loader import SafeLoader
 import re,time
-import pandas as pd
 import pyotp
 from fuzzywuzzy import process
-
 
 st.title("OTP Authenticator")
 st.sidebar.header("")
@@ -27,10 +25,10 @@ def get_authenticator():
     credentials['usernames'] = {}
 
     for user in users:
-        credentials['usernames'][user['key']] = {}
-        credentials['usernames'][user['key']]['email'] = user['key']
-        credentials['usernames'][user['key']]['name'] = user['name']
-        credentials['usernames'][user['key']]['password'] = user['password']
+        credentials['usernames'][user['username']] = {}
+        credentials['usernames'][user['username']]['email'] = user['username']
+        credentials['usernames'][user['username']]['name'] = user['name']
+        credentials['usernames'][user['username']]['password'] = user['password']
         
     authenticator = stauth.Authenticate(
                 credentials,
@@ -158,13 +156,13 @@ def main():
                 for entry in users:
                     entry.pop("password")
                 df = pd.DataFrame(users)
-                df.rename(columns={"key": "Username"}, inplace=True)
+                #df.rename(columns={"key": "Username"}, inplace=True)
                 st.title("User Data")
                 st.table(df)
             elif choice == "GetAllStudents":
                 students = db.fetch_all_students()
                 df = pd.DataFrame(students)
-                df.rename(columns={"key": "Username"}, inplace=True)
+                #df.rename(columns={"key": "Username"}, inplace=True)
                 st.title("Student Data")
                 st.table(df)
             elif choice == "GetOTP":
@@ -174,9 +172,9 @@ def main():
                 search_input = st.text_input("Search by Name or Email:")
 
                 # Use fuzzy matching to find the best matches for Name and Email
-                if df is not None and 'name' in df.columns and 'key' in df.columns:
+                if df is not None and 'name' in df.columns and 'username' in df.columns:
                     names = df['name'].tolist()
-                    emails = df['key'].tolist()
+                    emails = df['username'].tolist()
                     best_name_matches = process.extract(search_input, names, limit=df.shape[0])
                     best_email_matches = process.extract(search_input, emails, limit=df.shape[0])
 
@@ -185,7 +183,7 @@ def main():
                     matched_emails = [match for match, score in best_email_matches if score > 75]
 
                     # Filter dataframe by the matched names and emails
-                    filtered_df = df[df['name'].isin(matched_names) | df['key'].isin(matched_emails)]
+                    filtered_df = df[df['name'].isin(matched_names) | df['username'].isin(matched_emails)]
 
                     # If there are any matches, allow the user to select a record by name
                     if not filtered_df.empty:
@@ -250,9 +248,9 @@ def main():
                 search_input = st.text_input("Search by Name or Email:")
 
                 # Use fuzzy matching to find the best matches for Name and Email
-                if df is not None and 'name' in df.columns and 'key' in df.columns:
+                if df is not None and 'name' in df.columns and 'username' in df.columns:
                     names = df['name'].tolist()
-                    emails = df['key'].tolist()
+                    emails = df['username'].tolist()
                     best_name_matches = process.extract(search_input, names, limit=df.shape[0])
                     best_email_matches = process.extract(search_input, emails, limit=df.shape[0])
 
@@ -261,7 +259,7 @@ def main():
                     matched_emails = [match for match, score in best_email_matches if score > 75]
 
                     # Filter dataframe by the matched names and emails
-                    filtered_df = df[df['name'].isin(matched_names) | df['key'].isin(matched_emails)]
+                    filtered_df = df[df['name'].isin(matched_names) | df['username'].isin(matched_emails)]
 
                     # If there are any matches, allow the user to select a record by name
                     if not filtered_df.empty:
